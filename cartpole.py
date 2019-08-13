@@ -1,9 +1,9 @@
 import gym 
 import random
 import numpy as np
-from keras.models import Sequential
-from keras.layers import Dense
-from keras.optimizers import Adam
+#from keras.models import Sequential
+#from keras.layers import Dense
+#from keras.optimizers import Adam
 
 
 # action: 0 - move lft, 1 - move right
@@ -11,6 +11,8 @@ from keras.optimizers import Adam
 env = gym.make('CartPole-v1')
 env.reset()
 number_of_games = 10000
+steps_goal = 500
+score_requirement = 60
 
 
 def prepare_model_data():
@@ -25,7 +27,7 @@ def prepare_model_data():
         for step_index in range(steps_goal):
             action = env.action_space.sample()
             obs, rew, done, info = env.step(action)
-            if prev_obs != 0:
+            if len(prev_obs) >  0:
                 game_memory.append([prev_obs, action])
 
             prev_obs = obs
@@ -35,26 +37,13 @@ def prepare_model_data():
 
         if score >= score_requirement:
             accepted_scores.append(score)
+            for data in game_memory:
+                data_train.append(data)
 
+        env.reset()
 
+    print(data_train)
 
+    return data_train 
 
-
-
-
-
-
-
-observation = env.reset()
-for step_index in range(1000):
-    env.render()
-
-    print('obs: {}'.format(obs))
-    print('rew: {}'.format(rew))
-    print('done: {}'.format(done))
-    print('info: {}'.format(info))
-    print('action: {}'.format(action))
-    
-    if done:
-        break
-env.close()
+prepare_model_data()
