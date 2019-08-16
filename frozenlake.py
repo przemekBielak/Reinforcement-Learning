@@ -4,21 +4,22 @@ import random
 
 
 env = gym.make('FrozenLake8x8-v0')
-Q = np.zeros([env.observation_space.n, env.action_space.n])
+Q = np.random.rand(env.observation_space.n, env.action_space.n)
 reward_list = []
 
 alpha = 0.2
 gamma = 0.9
-epsilon = 0.1
-num_of_episodes = 100
+epsilon = 1
+num_of_episodes = 5000
 
 for episode in range(num_of_episodes):
     state = env.reset()
     total_reward = 0
+    epsilon *= 0.7
 
     done = False
     while not done:
-        # env.render()
+        env.render()
         if random.uniform(0, 1) < epsilon:
             action = env.action_space.sample()
         else:
@@ -36,3 +37,17 @@ for episode in range(num_of_episodes):
 
 print('reward sum from all episodes: {}'.format(str(sum(reward_list))))
 print('final Q value: {}'.format(Q))
+
+
+state = env.reset()
+done = False
+env.render()
+while not done:
+
+    action = np.argmax(Q[state, :])
+
+    next_state, reward, done, _ = env.step(action)
+    env.render()
+
+    if done: 
+        break
