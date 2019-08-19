@@ -2,30 +2,34 @@ import gym
 import numpy as np
 import random
 
-
-env = gym.make('FrozenLake8x8-v0')
-Q = np.random.rand(env.observation_space.n, env.action_space.n)
+env = gym.make('FrozenLake-v0', is_slippery=False)
+Q = np.zeros([env.observation_space.n, env.action_space.n])
+# Q = np.loadtxt('Q.txt')
 reward_list = []
 
 alpha = 0.2
 gamma = 0.9
-epsilon = 1
-num_of_episodes = 5000
+epsilon = 0
+num_of_episodes = 10000
 
 for episode in range(num_of_episodes):
     state = env.reset()
     total_reward = 0
-    epsilon *= 0.7
+    epsilon *= 0.9997
 
     done = False
     while not done:
-        env.render()
+        # env.render()
+        
         if random.uniform(0, 1) < epsilon:
             action = env.action_space.sample()
         else:
             action = np.argmax(Q[state, :])
 
-        next_state, reward, done, _ = env.step(action)
+        next_state, reward, done, info = env.step(action)
+
+        # if reward == 0:
+        #     reward -= 0.001
 
         Q[state, action] = (1 - alpha) * Q[state, action] + \
             alpha * (reward + gamma * np.max(Q[next_state, :] - Q[state, :]))
@@ -38,6 +42,7 @@ for episode in range(num_of_episodes):
 print('reward sum from all episodes: {}'.format(str(sum(reward_list))))
 print('final Q value: {}'.format(Q))
 
+np.savetxt('Q.txt', Q)
 
 state = env.reset()
 done = False
