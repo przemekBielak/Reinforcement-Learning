@@ -1,49 +1,65 @@
-import gym 
-import random
+import gym
 import numpy as np
-#from keras.models import Sequential
-#from keras.layers import Dense
-#from keras.optimizers import Adam
+import random
+
+alpha = 0.2
+gamma = 0.9
+epsilon = 0
+num_of_episodes = 10000
 
 
-# action: 0 - move lft, 1 - move right
+class RandomAgent:
+    def __init__(self, env_name, max_eps):
+        self.env = gym.make(env_name)
+        self.max_episodes = max_eps
 
-env = gym.make('CartPole-v1')
-env.reset()
-number_of_games = 10000
-steps_goal = 500
-score_requirement = 60
+    def run(self):
+        for episode in range(self.max_episodes):
+            state = self.env.reset()
+
+            done = False
+            while not done:
+                action = self.env.action_space.sample()
+                next_state, reward, done, _ = self.env.step(action)
+                self.env.render()
+
+                if done:
+                    break
+
+        self.env.close()
 
 
-def prepare_model_data():
-    data_train = []
-    accepted_scores = []
+def train():
+    for _ in range(num_of_episodes):
+        state = env.reset()
+        total_reward = 0
+        epsilon *= 0.9997
 
-    for game_index in range(number_of_games):
-        score = 0
-        prev_obs = []
-        game_memory = []
+        done = False
+        while not done:
+            # env.render()
 
-        for step_index in range(steps_goal):
-            action = env.action_space.sample()
-            obs, rew, done, info = env.step(action)
-            if len(prev_obs) >  0:
-                game_memory.append([prev_obs, action])
+            if random.uniform(0, 1) < epsilon:
+                action = env.action_space.sample()
+            else:
+                action = np.argmax(Q[state, :])
 
-            prev_obs = obs
-            score += rew
-            if done:
-                break
+            next_state, reward, done, _ = env.step(action)
 
-        if score >= score_requirement:
-            accepted_scores.append(score)
-            for data in game_memory:
-                data_train.append(data)
+            Q[state, action] = (1 - alpha) * Q[state, action] + \
+                alpha * (reward + gamma *
+                         np.max(Q[next_state, :] - Q[state, :]))
 
-        env.reset()
+            total_reward += reward
+            state = next_state
 
-    print(data_train)
+    print('final Q value: {}'.format(Q))
 
-    return data_train 
 
-prepare_model_data()
+def main():
+    agent = RandomAgent('CartPole-v0', 1000)
+    agent.run()
+
+
+if __name__ == '__main__':
+    main()
