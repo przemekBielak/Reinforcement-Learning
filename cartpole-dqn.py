@@ -15,17 +15,17 @@ model.add(Dense(24, activation='relu'))
 model.add(Dense(env.action_space.n, activation='linear'))
 model.compile(loss='mse', optimizer=Adam(), metrics=['mae'])
 
-model.load_weights("weights.h5")
+model.load_weights("weights2.h5")
 
 
 def train():
     gamma = 1.0
-    epsilon = 0.0
+    epsilon = 1.0
     epsilon_min = 0.01
     epsilon_decay = 0.999
     all_rewards = []
 
-    total_episodes = 100
+    total_episodes = 1000
     batch_size = 64
     memory_size = 50000
     memory = []
@@ -51,11 +51,6 @@ def train():
             next_state = np.array([next_state])
             episode_reward += reward
 
-            target = reward + gamma * np.max(model.predict(next_state))
-            target_f = model.predict(state)[0]
-            target_f[action] = target
-            model.fit(state, target_f.reshape(-1, env.action_space.n),
-                      epochs=1, verbose=0)
             memory.append((state, action, reward, next_state, done))
             state = next_state
 
@@ -63,24 +58,22 @@ def train():
             if len(memory) == memory_size:
                 del memory[:5000]
 
-            if done:
-                break
-
         all_rewards.append(episode_reward)
         print(episode, '\t', str(episode_reward), epsilon)
 
         if len(memory) > batch_size:
             minibatch = random.sample(memory, batch_size)
             for state, action, reward, next_state, done in minibatch:
-                target = reward
                 if not done:
                     target = reward + gamma * np.max(model.predict(next_state))
+                else:
+                    target = reward
                 target_f = model.predict(state)[0]
                 target_f[action] = target
                 model.fit(state, target_f.reshape(-1, env.action_space.n),
                           epochs=1, verbose=0)
 
-    model.save_weights("weights.h5")
+    model.save_weights("weights2.h5")
     plt.plot(all_rewards)
     plt.show()
 
@@ -101,7 +94,7 @@ def play(mode):
 
 
 def main():
-    # train()
+    train()
     play('trained')
 
 
