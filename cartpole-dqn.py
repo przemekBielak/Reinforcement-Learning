@@ -1,0 +1,99 @@
+import gym
+import numpy as np
+import random
+import matplotlib.pyplot as plt
+from keras.models import Sequential
+from keras.layers import Dense, Activation
+from keras.optimizers import Adam
+
+TRAIN = False
+
+env = gym.make('CartPole-v0')
+all_rewards = []
+
+gamma = 1.0
+epsilon = 0.0
+epsilon_min = 0.01
+epsilon_decay = 0.999
+
+total_episodes = 100
+batch_size = 64
+memory_size = 50000
+memory = []
+
+
+model = Sequential()
+model.add(
+    Dense(24, input_dim=env.observation_space.shape[0], activation='relu'))
+model.add(Dense(24, activation='relu'))
+model.add(Dense(env.action_space.n, activation='linear'))
+model.compile(loss='mse', optimizer=Adam(), metrics=['mae'])
+
+model.load_weights("weights.h5")
+
+
+if TRAIN:
+    for episode in range(total_episodes):
+        state = env.reset()
+        state = np.array([state])
+        episode_reward = 0
+
+        if epsilon > epsilon_min:
+            epsilon *= epsilon_decay
+
+        done = False
+        while not done:
+            # env.render()
+
+            if np.random.rand() < epsilon:
+                action = env.action_space.sample()
+            else:
+                action = np.argmax(model.predict(state))
+
+            next_state, reward, done, _ = env.step(action)
+            next_state = np.array([next_state])
+            episode_reward += reward
+
+            target = reward + gamma * np.max(model.predict(next_state))
+            target_f = model.predict(state)[0]
+            target_f[action] = target
+            model.fit(state, target_f.reshape(-1, env.action_space.n),
+                    epochs=1, verbose=0)
+            memory.append((state, action, reward, next_state, done))
+            state = next_state
+
+            # free first items in memory
+            if len(memory) == memory_size:
+                del memory[:5000]
+
+            if done:
+                break
+
+        all_rewards.append(episode_reward)
+        print(episode, '\t', str(episode_reward), epsilon)
+
+        if len(memory) > batch_size:
+            minibatch = random.sample(memory, batch_size)
+            for state, action, reward, next_state, done in minibatch:
+                target = reward
+                if not done:
+                    target = reward + gamma * np.max(model.predict(next_state))
+                target_f = model.predict(state)[0]
+                target_f[action] = target
+                model.fit(state, target_f.reshape(-1, env.action_space.n),
+                        epochs=1, verbose=0)
+
+    model.save_weights("weights.h5")
+
+state = env.reset()
+done = False
+while not done:
+    env.render()
+    action = np.argmax(model.predict(np.array([state])))
+    next_state, reward, done, _ = env.step(action)
+    state = next_state
+
+plt.plot(all_rewards)
+plt.show()
+
+env.close()
