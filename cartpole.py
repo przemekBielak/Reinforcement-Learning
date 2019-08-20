@@ -57,7 +57,6 @@ class Agent:
         self.env.close()
         return self.avarage_reward
 
-    def learn(self):
 
 
 

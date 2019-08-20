@@ -6,21 +6,7 @@ from keras.models import Sequential
 from keras.layers import Dense, Activation
 from keras.optimizers import Adam
 
-TRAIN = False
-
 env = gym.make('CartPole-v0')
-all_rewards = []
-
-gamma = 1.0
-epsilon = 0.0
-epsilon_min = 0.01
-epsilon_decay = 0.999
-
-total_episodes = 100
-batch_size = 64
-memory_size = 50000
-memory = []
-
 
 model = Sequential()
 model.add(
@@ -32,7 +18,18 @@ model.compile(loss='mse', optimizer=Adam(), metrics=['mae'])
 model.load_weights("weights.h5")
 
 
-if TRAIN:
+def train():
+    gamma = 1.0
+    epsilon = 0.0
+    epsilon_min = 0.01
+    epsilon_decay = 0.999
+    all_rewards = []
+
+    total_episodes = 100
+    batch_size = 64
+    memory_size = 50000
+    memory = []
+
     for episode in range(total_episodes):
         state = env.reset()
         state = np.array([state])
@@ -58,7 +55,7 @@ if TRAIN:
             target_f = model.predict(state)[0]
             target_f[action] = target
             model.fit(state, target_f.reshape(-1, env.action_space.n),
-                    epochs=1, verbose=0)
+                      epochs=1, verbose=0)
             memory.append((state, action, reward, next_state, done))
             state = next_state
 
@@ -81,19 +78,32 @@ if TRAIN:
                 target_f = model.predict(state)[0]
                 target_f[action] = target
                 model.fit(state, target_f.reshape(-1, env.action_space.n),
-                        epochs=1, verbose=0)
+                          epochs=1, verbose=0)
 
     model.save_weights("weights.h5")
+    plt.plot(all_rewards)
+    plt.show()
 
-state = env.reset()
-done = False
-while not done:
-    env.render()
-    action = np.argmax(model.predict(np.array([state])))
-    next_state, reward, done, _ = env.step(action)
-    state = next_state
 
-plt.plot(all_rewards)
-plt.show()
+def play(mode):
+    state = env.reset()
+    done = False
+    while not done:
+        env.render()
+        if mode == 'trained':
+            action = np.argmax(model.predict(np.array([state])))
+        elif mode == 'random':
+            action = env.action_space.sample()
+        next_state, reward, done, _ = env.step(action)
+        state = next_state
 
-env.close()
+    env.close()
+
+
+def main():
+    # train()
+    play('trained')
+
+
+if __name__ == '__main__':
+    main()
